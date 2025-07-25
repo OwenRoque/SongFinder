@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState, useCallback } from "react"
-import { Search, Upload, Music, Play, Heart, Share2, MoreHorizontal } from "lucide-react"
+import { useState, useCallback, useEffect } from "react"
+import { Search, Upload, Music, Play, Heart, BarChart3, LogOut, User } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,106 +11,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import Image from "next/image"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
 
-// Mock data for songs
-const mockSongs = [
-  {
-    id: 1,
-    name: "Midnight Dreams",
-    artist: "Luna Eclipse",
-    album: "Nocturnal Vibes",
-    duration: "3:42",
-    cover: "/placeholder.svg?height=300&width=300",
-    danceability: 0.75,
-    energy: 0.68,
-    liveness: 0.23,
-    valence: 0.82,
-    spotifyId: "4iV5W9uYEdYUVa79Axb7Rh",
-    releaseDate: "2023",
-    genre: "Electronic Pop",
-  },
-  {
-    id: 2,
-    name: "Neon Lights",
-    artist: "Cyber Wave",
-    album: "Digital Dreams",
-    duration: "4:15",
-    cover: "/placeholder.svg?height=300&width=300",
-    danceability: 0.89,
-    energy: 0.91,
-    liveness: 0.15,
-    valence: 0.76,
-    spotifyId: "4iV5W9uYEdYUVa79Axb7Rh",
-    releaseDate: "2023",
-    genre: "Synthwave",
-  },
-  {
-    id: 3,
-    name: "Ocean Waves",
-    artist: "Serene Sounds",
-    album: "Nature's Symphony",
-    duration: "5:28",
-    cover: "/placeholder.svg?height=300&width=300",
-    danceability: 0.34,
-    energy: 0.28,
-    liveness: 0.67,
-    valence: 0.45,
-    spotifyId: "4iV5W9uYEdYUVa79Axb7Rh",
-    releaseDate: "2022",
-    genre: "Ambient",
-  },
-  {
-    id: 4,
-    name: "Electric Storm",
-    artist: "Thunder Beats",
-    album: "Storm Chaser",
-    duration: "3:56",
-    cover: "/placeholder.svg?height=300&width=300",
-    danceability: 0.67,
-    energy: 0.94,
-    liveness: 0.45,
-    valence: 0.58,
-    spotifyId: "4iV5W9uYEdYUVa79Axb7Rh",
-    releaseDate: "2023",
-    genre: "Electronic Rock",
-  },
-  {
-    id: 5,
-    name: "Starlight Serenade",
-    artist: "Cosmic Melody",
-    album: "Galactic Journey",
-    duration: "4:33",
-    cover: "/placeholder.svg?height=300&width=300",
-    danceability: 0.56,
-    energy: 0.72,
-    liveness: 0.31,
-    valence: 0.89,
-    spotifyId: "4iV5W9uYEdYUVa79Axb7Rh",
-    releaseDate: "2023",
-    genre: "Space Pop",
-  },
-  {
-    id: 6,
-    name: "Urban Jungle",
-    artist: "City Vibes",
-    album: "Metropolitan",
-    duration: "3:21",
-    cover: "/placeholder.svg?height=300&width=300",
-    danceability: 0.78,
-    energy: 0.85,
-    liveness: 0.52,
-    valence: 0.71,
-    spotifyId: "4iV5W9uYEdYUVa79Axb7Rh",
-    releaseDate: "2023",
-    genre: "Urban Pop",
-  },
-]
+import Image from "next/image"
+import { formatDuration } from "@/lib/utils"
+import axios from "axios"
 
 interface CircularProgressProps {
   value: number
   label: string
   color: string
+}
+
+interface Song {
+  id: string
+  name: string
+  album_name: string
+  cover: string
+  artists: string[]
+  danceability: number
+  energy: number
+  liveness: number
+  valence: number
+  duration: number
+  lyrics: string
 }
 
 function CircularProgress({ value, label, color }: CircularProgressProps) {
@@ -149,33 +75,102 @@ function CircularProgress({ value, label, color }: CircularProgressProps) {
 export default function MusicSearchInterface() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchType, setSearchType] = useState("song")
-  const [selectedSong, setSelectedSong] = useState<(typeof mockSongs)[0] | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null)
+  const [filteredSongs, setFilteredSongs] = useState<Song[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
-  const songsPerPage = 6
-
-  const filteredSongs = mockSongs.filter((song) => {
-    if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
-    switch (searchType) {
-      case "song":
-        return song.name.toLowerCase().includes(query)
-      case "artist":
-        return song.artist.toLowerCase().includes(query)
-      case "album":
-        return song.album.toLowerCase().includes(query)
-      default:
-        return (
-          song.name.toLowerCase().includes(query) ||
-          song.artist.toLowerCase().includes(query) ||
-          song.album.toLowerCase().includes(query)
-        )
-    }
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showStats, setShowStats] = useState(false)
+  const [userData, setUserData] = useState({
+    name: "",
+    username: "",
+    id: "",
+    image: "/placeholder.svg?height=40&width=40",
   })
 
-  const totalPages = Math.ceil(filteredSongs.length / songsPerPage)
-  const startIndex = (currentPage - 1) * songsPerPage
-  const currentSongs = filteredSongs.slice(startIndex, startIndex + songsPerPage)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/me", {
+          withCredentials: true
+        })
+        const data = res.data
+        setUserData({
+          name: data.name,
+          username: data.id,
+          id: data.id,
+          image: data.image || "/placeholder.svg",
+        })
+        setIsAuthenticated(true)
+      } catch (e) {
+        console.log("No autenticado")
+        console.error(e)
+      }
+    }
+
+    fetchUserData()
+  }, [])
+
+  // Función para manejar el inicio de sesión
+  const handleLogin = () => {
+    window.location.href = "http://localhost:5000/login"
+  }
+
+  // Función para manejar el cierre de sesión
+  const handleLogout = async () => {
+    await fetch("http://localhost:5000/logout", { credentials: "include" })
+    setIsAuthenticated(false)
+    window.location.reload()
+  }
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
+
+    try {
+      const response = await axios.get<Song[]>("http://localhost:5000/search", {
+        params: {
+          q: searchQuery,
+          type: searchType,
+        },
+        headers: {
+          Accept: "application/json",
+        },
+      })
+      setFilteredSongs(response.data)
+    } catch (error) {
+      console.error("Error fetching songs:", error)
+      setFilteredSongs([])
+    }
+  }
+
+  const userId = "jUAN"
+
+  const sendEvent = async (
+      type: "searched" | "played" | "saved",
+      payload: {
+        user_id: string
+        song_id: string
+        timestamp: string
+      }
+  ) => {
+    try {
+      const res = await fetch(`http://localhost:5000/event/${type}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Error al enviar evento:", err);
+      } else {
+        console.log(`Evento ${type} enviado con éxito`);
+      }
+    } catch (e) {
+      console.error("Error en la red:", e);
+    }
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -221,8 +216,8 @@ export default function MusicSearchInterface() {
                   <TabsTrigger value="artist" className="text-xs">
                     Artist
                   </TabsTrigger>
-                  <TabsTrigger value="album" className="text-xs">
-                    Album
+                  <TabsTrigger value="lyrics" className="text-xs">
+                    Lyrics
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -233,6 +228,11 @@ export default function MusicSearchInterface() {
                   placeholder={`Search by ${searchType}...`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
                   className="pl-10 bg-gray-800 border-gray-700 focus:border-cyan-400 focus:ring-cyan-400"
                 />
               </div>
@@ -260,6 +260,47 @@ export default function MusicSearchInterface() {
                 <span className="text-sm font-medium">Upload MP3</span>
               </div>
             </div>
+
+            {/* Login Button or User Profile */}
+            {isAuthenticated ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="rounded-full p-0 w-10 h-10">
+                      <Avatar className="w-10 h-10 border-2 border-cyan-400">
+                        <AvatarImage src={userData.image || "/placeholder.svg"} alt={userData.name} />
+                        <AvatarFallback className="bg-gray-800 text-cyan-400">{userData.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-gray-800 border-gray-700">
+                    <div className="flex items-center justify-start p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        <p className="font-medium text-sm text-white">{userData.name}</p>
+                        <p className="text-xs text-gray-400">@{userData.username}</p>
+                      </div>
+                    </div>
+                    <DropdownMenuItem
+                        onClick={() => setShowStats(true)}
+                        className="cursor-pointer hover:bg-gray-700 hover:text-cyan-400"
+                    >
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      <span>Estadísticas</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={handleLogout}
+                        className="cursor-pointer hover:bg-gray-700 hover:text-cyan-400"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Cerrar sesión</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+            ) : (
+                <Button onClick={handleLogin} className="bg-green-600 hover:bg-green-700 text-white">
+                  <User className="mr-2 h-4 w-4" />
+                  Iniciar sesión
+                </Button>
+            )}
           </div>
         </div>
       </div>
@@ -268,7 +309,7 @@ export default function MusicSearchInterface() {
       <div className="container mx-auto px-4 py-8">
         {/* Results Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {currentSongs.map((song) => (
+          {filteredSongs.map((song) => (
             <Card
               key={song.id}
               className="bg-gray-900 border-gray-800 hover:bg-gray-800 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-cyan-400/10 cursor-pointer group"
@@ -279,7 +320,7 @@ export default function MusicSearchInterface() {
                   <div className="relative">
                     <Image
                       src={song.cover || "/placeholder.svg"}
-                      alt={song.album}
+                      alt={song.album_name}
                       width={80}
                       height={80}
                       className="rounded-lg object-cover"
@@ -293,10 +334,10 @@ export default function MusicSearchInterface() {
                     <h3 className="font-semibold text-white truncate group-hover:text-cyan-400 transition-colors">
                       {song.name}
                     </h3>
-                    <p className="text-gray-400 text-sm truncate">{song.artist}</p>
-                    <p className="text-gray-500 text-xs truncate">{song.album}</p>
+                    <p className="text-gray-400 text-sm truncate">{song.artists}</p>
+                    <p className="text-gray-500 text-xs truncate">{song.album_name}</p>
                     <Badge variant="secondary" className="mt-2 text-xs bg-gray-800 text-gray-300">
-                      {song.duration}
+                      {formatDuration(song.duration)}
                     </Badge>
                   </div>
                 </div>
@@ -312,44 +353,6 @@ export default function MusicSearchInterface() {
             </Card>
           ))}
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="bg-gray-800 border-gray-700 hover:bg-gray-700"
-            >
-              Previous
-            </Button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                onClick={() => setCurrentPage(page)}
-                className={
-                  currentPage === page
-                    ? "bg-cyan-400 text-gray-900 hover:bg-cyan-300"
-                    : "bg-gray-800 border-gray-700 hover:bg-gray-700"
-                }
-              >
-                {page}
-              </Button>
-            ))}
-
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="bg-gray-800 border-gray-700 hover:bg-gray-700"
-            >
-              Next
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Song Detail Modal */}
@@ -365,7 +368,7 @@ export default function MusicSearchInterface() {
                 <div className="flex items-start space-x-6 flex-wrap">
                   <Image
                     src={selectedSong.cover || "/placeholder.svg"}
-                    alt={selectedSong.album}
+                    alt={selectedSong.album_name}
                     width={200}
                     height={200}
                     className="rounded-lg object-cover max-w-[200px] w-full"
@@ -374,11 +377,11 @@ export default function MusicSearchInterface() {
                   <div className="flex-1 space-y-4 min-w-[200px]">
                     <div>
                       <h2 className="text-2xl font-bold text-white">{selectedSong.name}</h2>
-                      <p className="text-lg text-cyan-400">{selectedSong.artist}</p>
+                      <p className="text-lg text-cyan-400">{selectedSong.artists}</p>
                       <p className="text-gray-400">
-                        {selectedSong.album} • {selectedSong.releaseDate}
+                        {selectedSong.album_name}
                       </p>
-                      <Badge className="mt-2 bg-purple-600 hover:bg-purple-700">{selectedSong.genre}</Badge>
+                      <Badge className="mt-2 bg-purple-600 hover:bg-purple-700">selectedSong.popularity</Badge>
                     </div>
 
                     <div className="flex items-center space-x-4 flex-wrap">
@@ -390,32 +393,23 @@ export default function MusicSearchInterface() {
                         variant="outline"
                         size="icon"
                         className="border-gray-700 hover:bg-gray-800 bg-transparent"
+                        onClick={() =>
+                            sendEvent("saved", {
+                              user_id: userId,
+                              song_id: selectedSong.id,
+                              timestamp: new Date().toISOString(),
+                            })
+                        }
                       >
                         <Heart className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="border-gray-700 hover:bg-gray-800 bg-transparent"
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="border-gray-700 hover:bg-gray-800 bg-transparent"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-gray-800 border-gray-700">
-                          <DropdownMenuItem>Add to Playlist</DropdownMenuItem>
-                          <DropdownMenuItem>View Artist</DropdownMenuItem>
-                          <DropdownMenuItem>View Album</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {/*<Button*/}
+                      {/*  variant="outline"*/}
+                      {/*  size="icon"*/}
+                      {/*  className="border-gray-700 hover:bg-gray-800 bg-transparent"*/}
+                      {/*>*/}
+                      {/*  <Share2 className="w-4 h-4" />*/}
+                      {/*</Button>*/}
                     </div>
                   </div>
                 </div>
@@ -437,12 +431,154 @@ export default function MusicSearchInterface() {
                     </div>
                   </div>
                   <p className="text-gray-400 text-sm">
-                    Spotify embed would appear here with track ID: {selectedSong.spotifyId}
+                    Spotify embed would appear here with track ID: {selectedSong.id}
                   </p>
                 </div>
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Stats */}
+      <Dialog open={showStats} onOpenChange={setShowStats}>
+        <DialogContent className="bg-gray-900 border-gray-800 max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">Tus estadísticas de escucha</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="text-center mb-4">
+                    <Search className="w-8 h-8 mx-auto text-cyan-400 mb-2" />
+                    <h3 className="text-lg font-medium">Búsquedas</h3>
+                    <p className="text-3xl font-bold text-cyan-400 mt-2">247</p>
+                  </div>
+                  <Separator className="my-4 bg-gray-700" />
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Midnight Dreams</span>
+                        <span className="text-cyan-400">42</span>
+                      </div>
+                      <Progress value={42} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Neon Lights</span>
+                        <span className="text-cyan-400">36</span>
+                      </div>
+                      <Progress value={36} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Ocean Waves</span>
+                        <span className="text-cyan-400">28</span>
+                      </div>
+                      <Progress value={28} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="text-center mb-4">
+                    <Play className="w-8 h-8 mx-auto text-purple-400 mb-2" />
+                    <h3 className="text-lg font-medium">Reproducciones</h3>
+                    <p className="text-3xl font-bold text-purple-400 mt-2">189</p>
+                  </div>
+                  <Separator className="my-4 bg-gray-700" />
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Electric Storm</span>
+                        <span className="text-purple-400">53</span>
+                      </div>
+                      <Progress value={53} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Midnight Dreams</span>
+                        <span className="text-purple-400">37</span>
+                      </div>
+                      <Progress value={37} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Urban Jungle</span>
+                        <span className="text-purple-400">25</span>
+                      </div>
+                      <Progress value={25} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="pt-6">
+                  <div className="text-center mb-4">
+                    <Heart className="w-8 h-8 mx-auto text-pink-400 mb-2" />
+                    <h3 className="text-lg font-medium">Guardados</h3>
+                    <p className="text-3xl font-bold text-pink-400 mt-2">76</p>
+                  </div>
+                  <Separator className="my-4 bg-gray-700" />
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Starlight Serenade</span>
+                        <span className="text-pink-400">18</span>
+                      </div>
+                      <Progress value={18} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Electric Storm</span>
+                        <span className="text-pink-400">15</span>
+                      </div>
+                      <Progress value={15} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Neon Lights</span>
+                        <span className="text-pink-400">12</span>
+                      </div>
+                      <Progress value={12} max={100} className="h-2 bg-gray-700" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Actividad reciente</h3>
+                <div className="space-y-4">
+                  {[
+                    { action: "Búsqueda", song: "Midnight Dreams", time: "Hace 2 horas", icon: Search },
+                    { action: "Reproducción", song: "Electric Storm", time: "Hace 3 horas", icon: Play },
+                    { action: "Guardado", song: "Starlight Serenade", time: "Hace 5 horas", icon: Heart },
+                    { action: "Búsqueda", song: "Urban Jungle", time: "Hace 1 día", icon: Search },
+                    { action: "Reproducción", song: "Neon Lights", time: "Hace 1 día", icon: Play },
+                  ].map((item, index) => (
+                      <div key={index} className="flex items-center space-x-4 p-2 rounded-lg hover:bg-gray-700">
+                        <div className="p-2 rounded-full bg-gray-700">
+                          <item.icon className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            {item.action}: {item.song}
+                          </p>
+                          <p className="text-xs text-gray-400">{item.time}</p>
+                        </div>
+                      </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

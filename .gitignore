@@ -41,3 +41,12 @@ yarn-error.log*
 next-env.d.ts
 
 guia.txt
+.idea
+venv
+
+backend/__pycache__
+backend/canciones.jsonl
+backend/http_ca.crt
+backend/index_songs.py
+backend/search.py
+backend/songs_with_attributes_and_lyrics.csv

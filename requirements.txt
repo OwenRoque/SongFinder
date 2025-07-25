@@ -1,0 +1,10 @@
+flask
+flask-cors
+hdfs
+mysql-connector-python
+requests
+pyhive
+thrift
+kafka-python
+python-dotenv
+pandas
