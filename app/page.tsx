@@ -90,7 +90,7 @@ export default function MusicSearchInterface() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/me", {
+        const res = await axios.get("http://127.0.0.1:5000/me", {
           withCredentials: true
         })
         const data = res.data
@@ -112,12 +112,12 @@ export default function MusicSearchInterface() {
 
   // Función para manejar el inicio de sesión
   const handleLogin = () => {
-    window.location.href = "http://localhost:5000/login"
+    window.location.href = "http://127.0.0.1:5000/login"
   }
 
   // Función para manejar el cierre de sesión
   const handleLogout = async () => {
-    await fetch("http://localhost:5000/logout", { credentials: "include" })
+    await fetch("http://127.0.0.1:5000/logout", { credentials: "include" })
     setIsAuthenticated(false)
     window.location.reload()
   }
@@ -126,7 +126,7 @@ export default function MusicSearchInterface() {
     if (!searchQuery.trim()) return
 
     try {
-      const response = await axios.get<Song[]>("http://localhost:5000/search", {
+      const response = await axios.get<Song[]>("http://127.0.0.1:5000/search", {
         params: {
           q: searchQuery,
           type: searchType,
@@ -153,7 +153,7 @@ export default function MusicSearchInterface() {
       }
   ) => {
     try {
-      const res = await fetch(`http://localhost:5000/event/${type}`, {
+      const res = await fetch(`http://127.0.0.1:5000/event/${type}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

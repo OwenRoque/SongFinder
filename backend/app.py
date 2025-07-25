@@ -17,7 +17,7 @@ import pandas as pd
 SPARK_UPDATE_SCRIPT = "/aqui/mp3-processing.py"
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000"], supports_credentials=True)  # Permitir peticiones desde el frontend
+CORS(app, origins=["http://127.0.0.1:3000"], supports_credentials=True)  # Permitir peticiones desde el frontend
 access_token = None
 
 songs_df = pd.read_csv("./songs_with_attributes_and_lyrics.csv")
@@ -88,15 +88,18 @@ def callback():
     if not user_info:
         return "❌ Error al obtener perfil de usuario."
 
-    resp = make_response(redirect("http://localhost:3000"))
-    resp.set_cookie("spotify_access_token", access_token, httponly=True, samesite="Lax", max_age=3600)
-    resp.set_cookie("spotify_user_id", user_info["id"], max_age=3600)
-    resp.set_cookie("spotify_name", user_info.get("display_name", ""), max_age=3600)
-    resp.set_cookie("spotify_image", user_info.get("images", [{}])[0].get("url", ""), max_age=3600)
+    resp = make_response(redirect("http://127.0.0.1:3000"))
+    resp.set_cookie("spotify_access_token", access_token, httponly=True, samesite="Lax", max_age=3600, path="/")
+    resp.set_cookie("spotify_user_id", user_info["id"], max_age=3600, path="/")
+    resp.set_cookie("spotify_name", user_info.get("display_name", ""), max_age=3600, path="/")
+    resp.set_cookie("spotify_image", user_info.get("images", [{}])[0].get("url", ""), max_age=3600, path="/")
+
     return resp
 
 @app.route("/me")
 def me():
+    print("Cookies recibidas:", request.cookies)
+
     user_id = request.cookies.get("spotify_user_id")
     name = request.cookies.get("spotify_name")
     image = request.cookies.get("spotify_image")
