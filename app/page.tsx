@@ -424,15 +424,14 @@ export default function MusicSearchInterface() {
 
                 {/* Spotify Embed Placeholder */}
                 <div className="bg-gray-800 rounded-lg p-6 text-center w-full">
-                  <div className="w-full h-32 bg-gray-700 rounded-lg flex items-center justify-center mb-4">
-                    <div className="text-green-400">
-                      <Music className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm">Spotify Player</p>
-                    </div>
-                  </div>
-                  <p className="text-gray-400 text-sm">
-                    Spotify embed would appear here with track ID: {selectedSong.id}
-                  </p>
+                  <iframe
+                      src={`https://open.spotify.com/embed/track/${selectedSong.id}`}
+                      width="100%"
+                      height="80"
+                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                      loading="lazy"
+                      className="rounded-lg"
+                  ></iframe>
                 </div>
               </div>
             </>

@@ -54,10 +54,6 @@ def get_song_meta(song_ids):
 
     return results
 
-# --- RUTA DE SUBIDA DE MP3 ---
-# @app.route("/upload-mp3", methods=["POST"])
-# TODO
-
 @app.route("/login")
 def login():
     return redirect(get_auth_url())
@@ -167,6 +163,9 @@ def search():
         }
         songs.append(song_obj)
     return jsonify(songs)
+
+@app.route("/upload-mp3", methods=["POST"])
+
 
 # Kafka
 # producer = KafkaProducer(
