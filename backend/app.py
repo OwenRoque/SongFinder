@@ -94,7 +94,7 @@ def callback():
 
 @app.route("/me")
 def me():
-    print("Cookies recibidas:", request.cookies)
+    # print("Cookies recibidas:", request.cookies)
 
     user_id = request.cookies.get("spotify_user_id")
     name = request.cookies.get("spotify_name")
@@ -107,23 +107,31 @@ def me():
         "image": image
     })
 
-def get_artwork(track_id):
+def get_additional_metadata(track_id):
     global access_token
     if not track_id or not access_token:
-        return ""
+        return {"cover": "", "popularity": 0, "release_date": ""}
 
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
     url = f"https://api.spotify.com/v1/tracks/{track_id}"
     try:
-        resp = requests.get(url, headers=headers, timeout=5)
+        resp = requests.get(url, headers=headers, timeout=50)
         if resp.status_code != 200:
-            return ""
+            return {"cover": "", "popularity": 0, "release_date": ""}
         data = resp.json()
-        return data.get("album", {}).get("images", [{}])[0].get("url", "")
+
+        cover = data.get("album", {}).get("images", [{}])[0].get("url", "")
+        popularity = data.get("popularity", 0)
+        release_date = data.get("album", {}).get("release_date", "")
+        return {
+            "cover": cover,
+            "popularity": popularity,
+            "release_date": release_date
+        }
     except Exception:
-        return ""
+        return {"message": Exception}
 
 @app.route("/search")
 def search():
@@ -146,18 +154,24 @@ def search():
     for song in raw_results:
         song_id = song.get("id", "")
         # Obtener portada desde Spotify
-        cover_url = get_artwork(song_id)
+        spotify_data = get_additional_metadata(song_id)
         # Armar objeto tipo Song (según la interfaz frontend)
         song_obj = {
             "id": song.get("id"),
             "name": song.get("name"),
             "album_name": song.get("album_name", ""),
-            "cover": cover_url,
+            "cover": spotify_data["cover"],
             "artists": song.get("artists", []),
+            "popularity": spotify_data["popularity"],
+            "release_date": spotify_data["release_date"],
             "danceability": song.get("danceability"),
             "energy": song.get("energy"),
             "liveness": song.get("liveness"),
             "valence": song.get("valence"),
+            "loudness": song.get("loudness"),
+            "speechiness": song.get("speechiness"),
+            "acousticness": song.get("acousticness"),
+            "instrumentalness": song.get("instrumentalness"),
             "duration": song.get("duration_ms"),
             "lyrics": song.get("lyrics", "")
         }

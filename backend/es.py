@@ -14,7 +14,7 @@ es = Elasticsearch(
     verify_certs=True
 )
 
-def search_lyrics(term, max_results=9):
+def search_lyrics(term, max_results=12):
     query = {
         "query": {
             "bool": {
@@ -60,7 +60,7 @@ def search_lyrics(term, max_results=9):
         print(f"❌ Error inesperado en búsqueda ES: {type(e).__name__} - {str(e)}")
         return []
 
-def search_artist(term, max_results=9):
+def search_artist(term, max_results=12):
     query = {
         "query": {
             "bool": {
@@ -106,7 +106,7 @@ def search_artist(term, max_results=9):
         print(f"❌ Error inesperado en búsqueda ES: {type(e).__name__} - {str(e)}")
         return []
 
-def search_song(term, max_results=9):
+def search_song(term, max_results=12):
     query = {
         "query": {
             "bool": {

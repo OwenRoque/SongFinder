@@ -31,10 +31,16 @@ interface Song {
   album_name: string
   cover: string
   artists: string[]
+  popularity: number
+  release_date: string
   danceability: number
   energy: number
   liveness: number
   valence: number
+  loudness: number
+  speechiness: number
+  acousticness: number
+  instrumentalness: number
   duration: number
   lyrics: string
 }
@@ -310,7 +316,7 @@ export default function MusicSearchInterface() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {/* Results Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
           {filteredSongs.map((song) => (
             <Card
               key={song.id}
@@ -336,7 +342,7 @@ export default function MusicSearchInterface() {
                     <h3 className="font-semibold text-white truncate group-hover:text-cyan-400 transition-colors">
                       {song.name}
                     </h3>
-                    <p className="text-gray-400 text-sm truncate">{song.artists}</p>
+                    <p className="text-gray-400 text-sm truncate">{song.artists.join(", ")}</p>
                     <p className="text-gray-500 text-xs truncate">{song.album_name}</p>
                     <Badge variant="secondary" className="mt-2 text-xs bg-gray-800 text-gray-300">
                       {formatDuration(song.duration)}
@@ -379,15 +385,37 @@ export default function MusicSearchInterface() {
                   <div className="flex-1 space-y-4 min-w-[200px]">
                     <div>
                       <h2 className="text-2xl font-bold text-white">{selectedSong.name}</h2>
-                      <p className="text-lg text-cyan-400">{selectedSong.artists}</p>
+                      <p className="text-lg text-cyan-400">{selectedSong.artists.join(", ")}</p>
                       <p className="text-gray-400">
-                        {selectedSong.album_name}
+                        {selectedSong.album_name} • {selectedSong.release_date?.length === 10
+                          ? new Date(selectedSong.release_date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                          : selectedSong.release_date?.length === 7
+                            ? new Date(selectedSong.release_date + "-01").toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                            })
+                          : selectedSong.release_date?.length === 4
+                            ? selectedSong.release_date
+                          : "Unknown"}
                       </p>
-                      <Badge className="mt-2 bg-purple-600 hover:bg-purple-700">selectedSong.popularity</Badge>
+                      <Badge className="mt-2 bg-purple-600 hover:bg-purple-700">{selectedSong.popularity}% popular</Badge>
                     </div>
 
                     <div className="flex items-center space-x-4 flex-wrap">
-                      <Button className="bg-green-600 hover:bg-green-700">
+                      <Button
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() =>
+                          sendEvent("played", {
+                            user_id: userId,
+                            song_id: selectedSong.id,
+                            timestamp: new Date().toISOString(),
+                          })
+                        }
+                      >
                         <Play className="w-4 h-4 mr-2" />
                         Play on Spotify
                       </Button>
@@ -405,13 +433,6 @@ export default function MusicSearchInterface() {
                       >
                         <Heart className="w-4 h-4" />
                       </Button>
-                      {/*<Button*/}
-                      {/*  variant="outline"*/}
-                      {/*  size="icon"*/}
-                      {/*  className="border-gray-700 hover:bg-gray-800 bg-transparent"*/}
-                      {/*>*/}
-                      {/*  <Share2 className="w-4 h-4" />*/}
-                      {/*</Button>*/}
                     </div>
                   </div>
                 </div>
@@ -422,6 +443,11 @@ export default function MusicSearchInterface() {
                   <CircularProgress value={selectedSong.energy} label="energy" color="#f59e0b" />
                   <CircularProgress value={selectedSong.liveness} label="liveness" color="#10b981" />
                   <CircularProgress value={selectedSong.valence} label="valence" color="#8b5cf6" />
+
+                  <CircularProgress value={selectedSong.acousticness} label="acousticness" color="#ef4444" />
+                  <CircularProgress value={selectedSong.instrumentalness} label="instrumentalness" color="#ec4899" />
+                  <CircularProgress value={selectedSong.speechiness} label="speechiness" color="#22d3ee" />
+                  <CircularProgress value={selectedSong.loudness} label="loudness" color="#a855f7" />
                 </div>
 
                 {/* Spotify Embed Placeholder */}

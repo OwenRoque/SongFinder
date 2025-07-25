@@ -57,11 +57,16 @@ def get_song_metadata(song_ids, page=1, page_size=9):
     ids_str = ",".join(f"'{sid}'" for sid in song_ids)
     sql = f"SELECT * FROM songs_metadata WHERE id IN ({ids_str})"
     results = query_hive(sql)
-    keys = ["id", "name", "album_name", "artists", "danceability", "energy", "liveness", "valence", "duration_ms", "lyrics"]
+    keys = ["id", "name", "album_name", "artists", "danceability", "energy", "liveness", "valence",
+        "loudness", "speechiness", "acousticness", "instrumentalness", "duration_ms", "lyrics"]
     songs = []
     for row in results:
         song = dict(zip(keys, row))
-        print(song)
+
+        album_name = song.get("album_name")
+        if album_name is None or str(album_name).lower() == "nan":
+            song["album_name"] = "-"
+
         raw_artists = song.get("artists")
         if raw_artists:
             raw_artists = raw_artists.strip()
