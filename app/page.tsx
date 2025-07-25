@@ -134,6 +134,7 @@ export default function MusicSearchInterface() {
         headers: {
           Accept: "application/json",
         },
+        withCredentials: true,
       })
       setFilteredSongs(response.data)
     } catch (error) {
@@ -159,6 +160,7 @@ export default function MusicSearchInterface() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
+        credentials: "include"
       });
 
       if (!res.ok) {

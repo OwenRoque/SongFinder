@@ -164,7 +164,46 @@ def search():
         songs.append(song_obj)
     return jsonify(songs)
 
-@app.route("/upload-mp3", methods=["POST"])
+# @app.route("/upload-mp3", methods=["POST"])
+# async def upload_song(file: UploadFile = File(...)):
+#     try:
+#         filename = file.filename
+#         local_path = f"/tmp/{filename}"
+#         with open(local_path, "wb") as f:
+#             shutil.copyfileobj(file.file, f)
+#
+#         print(f"[INFO] MP3 guardado localmente como {local_path}")
+#
+#         # Extraer letra - Simulación
+#         lyrics = "Letra de ejemplo extraída del mp3..."
+#
+#         # Guardar metadata local temporal
+#         metadata = {
+#             "song_id": filename,
+#             "title": filename,
+#             "lyrics": lyrics,
+#             "uploaded_at": datetime.utcnow().isoformat()
+#         }
+#
+#         # Subir a HDFS
+#         metadata_line = json.dumps(metadata) + "\n"
+#         with hdfs_client.write(METADATA_PATH, encoding='utf-8', append=True) as writer:
+#             writer.write(metadata_line)
+#
+#         print("[INFO] Metadata agregada a HDFS")
+#
+#         # Ejecutar Spark para actualizar índice invertido
+#         subprocess.run(["spark-submit", SPARK_UPDATE_SCRIPT], check=True)
+#         print("[INFO] Spark job ejecutado con éxito")
+#
+#         # Recargar metadatos actualizados
+#         load_metadata_from_hdfs()
+#
+#         return {"status": "ok", "message": f"{filename} subida correctamente"}
+#
+#     except Exception as e:
+#         print(f"[ERROR] Error en /upload-mp3: {e}")
+#         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # Kafka
